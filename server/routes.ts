@@ -4,7 +4,7 @@ import { storage } from "./storage";
 import { api } from "@shared/routes";
 import { z } from "zod";
 import multer from "multer";
-import { speechToText } from "./replit_integrations/audio/client";
+import { speechToText, ensureCompatibleFormat } from "./replit_integrations/audio/client";
 import { openai } from "./replit_integrations/audio/client";
 
 // Set up multer to keep file in memory
@@ -40,15 +40,9 @@ export async function registerRoutes(
         return res.status(400).json({ message: "Salesperson name and client name are required" });
       }
 
-      const formatMatch = file.originalname.match(/\.([a-zA-Z0-9]+)$/);
-      let format = "wav";
-      if (formatMatch) {
-        const ext = formatMatch[1].toLowerCase();
-        if (ext === "mp3") format = "mp3";
-        if (ext === "webm") format = "webm";
-      }
+      const { buffer: compatibleBuffer, format } = await ensureCompatibleFormat(file.buffer);
 
-      const transcript = await speechToText(file.buffer, format as any);
+      const transcript = await speechToText(compatibleBuffer, format);
 
       const analysisPrompt = `
       Analyze this sales call transcript. The call may contain Hindi, English, and Gujarati languages mixed.
