@@ -1,4 +1,4 @@
-import OpenAI, { toFile } from "openai";
+import Groq from "groq-sdk";
 import { Buffer } from "node:buffer";
 import { spawn } from "child_process";
 import { writeFile, unlink, readFile } from "fs/promises";
@@ -6,10 +6,10 @@ import { randomUUID } from "crypto";
 import { tmpdir } from "os";
 import { join } from "path";
 
-export const openai = new OpenAI({
-  apiKey: process.env.AI_INTEGRATIONS_OPENAI_API_KEY,
-  baseURL: process.env.AI_INTEGRATIONS_OPENAI_BASE_URL,
+const groq = new Groq({
+  apiKey: process.env.GROQ_API_KEY
 });
+
 
 export type AudioFormat = "wav" | "mp3" | "webm" | "mp4" | "ogg" | "unknown";
 
@@ -241,14 +241,14 @@ export async function speechToText(
   audioBuffer: Buffer,
   format: "wav" | "mp3" | "webm" = "wav"
 ): Promise<string> {
-  const file = await toFile(audioBuffer, `audio.${format}`);
-  const response = await openai.audio.transcriptions.create({
-    file,
-    model: "gpt-4o-mini-transcribe",
-  });
-  return response.text;
-}
 
+  const transcription = await groq.audio.transcriptions.create({
+    file: new File([audioBuffer], `audio.${format}`, { type: `audio/${format}` }),
+    model: "whisper-large-v3"
+  });
+
+  return transcription.text;
+}
 /**
  * Streaming Speech-to-Text: Transcribes audio with real-time streaming.
  * Uses gpt-4o-mini-transcribe for accurate transcription.

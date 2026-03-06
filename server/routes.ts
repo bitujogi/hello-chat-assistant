@@ -5,7 +5,11 @@ import { api } from "@shared/routes";
 import { z } from "zod";
 import multer from "multer";
 import { speechToText } from "./replit_integrations/audio/client";
-import { openai } from "./replit_integrations/audio/client";
+import Groq from "groq-sdk";
+
+const groq = new Groq({
+  apiKey: process.env.GROQ_API_KEY
+});
 
 // Set up multer to keep file in memory
 const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 50 * 1024 * 1024 } }); // 50MB limit
@@ -71,14 +75,21 @@ export async function registerRoutes(
       ${transcript}
       `;
 
-      const analysisResponse = await openai.chat.completions.create({
-        model: "gpt-5.1",
-        messages: [{ role: "user", content: analysisPrompt }],
-        temperature: 0.3,
-        response_format: { type: "json_object" }
-      });
+     const analysisResponse = await groq.chat.completions.create({
+  model: "llama-3.3-70b-versatile",
+  messages: [{ role: "user", content: analysisPrompt }],
+  temperature: 0.3
+});
 
-      const analysisData = JSON.parse(analysisResponse.choices[0].message?.content || "{}");
+      const raw = analysisResponse.choices[0].message?.content || "";
+
+// Remove markdown code blocks if present
+const cleaned = raw
+  .replace(/```json/g, "")
+  .replace(/```/g, "")
+  .trim();
+
+const analysisData = JSON.parse(cleaned || "{}");
 
       const newCall = await storage.createCallRecord({
         salespersonName,
