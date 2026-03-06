@@ -26,3 +26,9 @@ npm start
 Open your browser and visit:
 
 http://localhost:5000
+
+
+root@srv1422834:/var/www/Hello-Chat-Assistant# kill -9 $(lsof -t -i:5000)
+root@srv1422834:/var/www/Hello-Chat-Assistant# cd /var/www/Hello-Chat-Assistant
+root@srv1422834:/var/www/Hello-Chat-Assistant# tsx server/index.ts
+10:24:05 AM [express] serving on port 5000
